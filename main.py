@@ -4,15 +4,14 @@ import json
 import aiohttp
 import dropbox
 import time
+import os
 import asyncio
 from io import BytesIO
 
 DROPBOX_TOKEN = "sl.u.AGKZXBEDby-WSY6Wy-vxI-5wh-FlvO-oacPU6vIx1WtvElxJk6LnVEbHm0Nij0KLFB7pO3KtczNmQ1n9Pm0T-gYbEJJw2QIpQ8INlfDvs45LyfoeJl-zkph3WqBoEGiR3jKAUFLHGyEpphFYrG69-9S9PpUosay6ETrE55NK-gr1PfnTdY_v3NPVkcEwaICy0-wtXYr06mmuZyow6dvOeP0Okn3SFGV7szJrL2YLX0X-x2S5sbJyW6m9j4IPRbiz7uZUFcUx_MRoHeGdw_v7Yl4hDnWmsbaFNmY_PY1dResiz9K9sNY2JuSoPBm2hH-aP4YX-TDenIvAwM9-EQlbKGYubz2sFdo7FvuP44uMIm0l2GVSJ2ZgoIPtriKeEds_bJv4xXZ_dXAdwpTYcKCzRBrWcCilpHVDdBTcDY5mo3XO45Qs67Le4S61IaXohLYlnZAmTcmiGN2tEbJfjBSxC1XSXNXceqYWyVTfDLt40rZ_2UusiROjAwiTvLbBiAP92MhVmOqPS1b2dLRoPXxd_K8Of9XPxJ8Vjn4nygyxzCtYMZWP6IZj3RMItIlsivWP8APw9KbwA8Nlw5lcBtF-T6kKzJm8WHNUQMKad6DFtruoFzEhde9bPDxv2crcMKiXK24JeEgzFdmVZc8CSubZGtyXppRWzpo5iuUCyi4LNAIbMAjLTS95dYKhYkwv7aIyT_bMC4GSf7R5V59Ms1yuqfEpMiGeN5qt0-usJMhpcavHf7cnj_LTimeMits8pJbsUvXdzMf4LEMMr6R2LzBqDLrgE78VOVy-ptHrBDkiZut63RtuUkknujila-2R3FefD7BYYA9kP807mmYYlfIycTIqU9FrwUyAaU2sVlniddT2rHs4mEd5M6IUOqoJ_bU-IYUUdlgdG1baRJ_T61oBHjWIM7PopjSn9l9r_RPHGeoHE7-KuyAtd4ElUwAN7_hbgGD4GVhbuA45BCJMIbP7wiMtktS0jWTdTUlPUN14uZeGywAu2vG7aIEn_9Y2dcWOHndcqaT6L9iaXNcma5o3VicfvY3UfLZPdXN3hNGW07Kh1Rl1Mw8oYmDwP6piSuGDCnd9rQ8ZwHLtwjYb8h6BCaHgsYgon_1uNJEVhiLx_rnfFDtV27mduigUqiU1-5bA6u1raEzghssHdTiY2iz-Cytg8chCdOhWdn1vx07HzJ_JiQRWWzloH0D48LLPWx82rNj1rPOCWnO7QOCtf81i2B7p6dadg_KE5Xv3Tt3rf85VZYkUnYEcmiZ1nQtiT1-vr8_K3bRWkbNB4FATDPk67m6bWV2zXX2_9M7Ylea38lRullgT6jwd4PGSgMe_4yrpK-Z5IH6fE1TC1peUXHx0sqFTpEz-QJN9u-oEiiuqBjuvwfUTJZC7YQIr8YFefcSvEAE"  # <- Pon aquí tu token
 dbx = dropbox.Dropbox(DROPBOX_TOKEN)
 
-with open("secrets.json") as f:
-    data = json.load(f)
-TOKEN = data["TOKEN"]
+BOT_TOKEN = os.getenv("DISCORD_TOKEN") 
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -317,4 +316,4 @@ async def help_command(ctx):
     # Enviar el Embed al canal
     await ctx.send(embed=embed)
 
-bot.run(TOKEN)
+bot.run(BOT_TOKEN) 
