@@ -8,6 +8,32 @@ import os
 import asyncio
 from io import BytesIO
 
+# --- CONFIGURACIÓN GLOBAL ---
+# ID del servidor que actuará como la fuente única de la lista VIP.
+SERVER_MAESTRO_ID = 123456789012345678  # <--- ¡REEMPLAZA CON EL ID DE TU SERVER!
+LISTA_GLOBAL_JSON = "global_vips.json" 
+# ----------------------------
+
+def load_global_vips():
+    """Carga la lista global de IDs VIP desde el archivo JSON al iniciar."""
+    try:
+        with open(LISTA_GLOBAL_JSON, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_global_vips():
+    """Guarda la lista global de IDs VIP al archivo JSON."""
+    global USUARIOS_GLOBAL_VIP, LISTA_GLOBAL_JSON
+    try:
+        with open(LISTA_GLOBAL_JSON, 'w') as f:
+            json.dump(USUARIOS_GLOBAL_VIP, f, indent=4)
+    except Exception as e:
+        print(f"❌ Error al guardar la lista VIP en JSON: {e}")
+
+# Carga la lista global de IDs al iniciar el bot
+USUARIOS_GLOBAL_VIP = load_global_vips()
+
 DROPBOX_TOKEN = "sl.u.AGKZXBEDby-WSY6Wy-vxI-5wh-FlvO-oacPU6vIx1WtvElxJk6LnVEbHm0Nij0KLFB7pO3KtczNmQ1n9Pm0T-gYbEJJw2QIpQ8INlfDvs45LyfoeJl-zkph3WqBoEGiR3jKAUFLHGyEpphFYrG69-9S9PpUosay6ETrE55NK-gr1PfnTdY_v3NPVkcEwaICy0-wtXYr06mmuZyow6dvOeP0Okn3SFGV7szJrL2YLX0X-x2S5sbJyW6m9j4IPRbiz7uZUFcUx_MRoHeGdw_v7Yl4hDnWmsbaFNmY_PY1dResiz9K9sNY2JuSoPBm2hH-aP4YX-TDenIvAwM9-EQlbKGYubz2sFdo7FvuP44uMIm0l2GVSJ2ZgoIPtriKeEds_bJv4xXZ_dXAdwpTYcKCzRBrWcCilpHVDdBTcDY5mo3XO45Qs67Le4S61IaXohLYlnZAmTcmiGN2tEbJfjBSxC1XSXNXceqYWyVTfDLt40rZ_2UusiROjAwiTvLbBiAP92MhVmOqPS1b2dLRoPXxd_K8Of9XPxJ8Vjn4nygyxzCtYMZWP6IZj3RMItIlsivWP8APw9KbwA8Nlw5lcBtF-T6kKzJm8WHNUQMKad6DFtruoFzEhde9bPDxv2crcMKiXK24JeEgzFdmVZc8CSubZGtyXppRWzpo5iuUCyi4LNAIbMAjLTS95dYKhYkwv7aIyT_bMC4GSf7R5V59Ms1yuqfEpMiGeN5qt0-usJMhpcavHf7cnj_LTimeMits8pJbsUvXdzMf4LEMMr6R2LzBqDLrgE78VOVy-ptHrBDkiZut63RtuUkknujila-2R3FefD7BYYA9kP807mmYYlfIycTIqU9FrwUyAaU2sVlniddT2rHs4mEd5M6IUOqoJ_bU-IYUUdlgdG1baRJ_T61oBHjWIM7PopjSn9l9r_RPHGeoHE7-KuyAtd4ElUwAN7_hbgGD4GVhbuA45BCJMIbP7wiMtktS0jWTdTUlPUN14uZeGywAu2vG7aIEn_9Y2dcWOHndcqaT6L9iaXNcma5o3VicfvY3UfLZPdXN3hNGW07Kh1Rl1Mw8oYmDwP6piSuGDCnd9rQ8ZwHLtwjYb8h6BCaHgsYgon_1uNJEVhiLx_rnfFDtV27mduigUqiU1-5bA6u1raEzghssHdTiY2iz-Cytg8chCdOhWdn1vx07HzJ_JiQRWWzloH0D48LLPWx82rNj1rPOCWnO7QOCtf81i2B7p6dadg_KE5Xv3Tt3rf85VZYkUnYEcmiZ1nQtiT1-vr8_K3bRWkbNB4FATDPk67m6bWV2zXX2_9M7Ylea38lRullgT6jwd4PGSgMe_4yrpK-Z5IH6fE1TC1peUXHx0sqFTpEz-QJN9u-oEiiuqBjuvwfUTJZC7YQIr8YFefcSvEAE"  # <- Pon aquí tu token
 dbx = dropbox.Dropbox(DROPBOX_TOKEN)
 
@@ -21,6 +47,38 @@ bot = commands.Bot(command_prefix="!", intents=intents, case_insensitive=True)
 @bot.event
 async def on_ready():
     print(f"Bot conectado como {bot.user}")
+
+@bot.event
+async def on_member_update(before, after):
+    global USUARIOS_GLOBAL_VIP
+    
+    # 1. Verificar si el cambio ocurrió en el Servidor Maestro
+    if before.guild.id != SERVER_MAESTRO_ID:
+        return
+
+    # 2. Definir el nombre del rol VIP
+    ROL_VIP_NAME = "Bot VIP"
+
+    # 3. Obtener los nombres de roles antes y después del cambio
+    roles_before = set(r.name for r in before.roles)
+    roles_after = set(r.name for r in after.roles)
+
+    # --- LÓGICA DE DETECCIÓN ---
+    
+    # a) Si el rol fue añadido
+    if ROL_VIP_NAME not in roles_before and ROL_VIP_NAME in roles_after:
+        if after.id not in USUARIOS_GLOBAL_VIP:
+            USUARIOS_GLOBAL_VIP.append(after.id)
+            save_global_vips()
+            print(f"✅ VIP Añadido automáticamente: {after.name}")
+    
+    # b) Si el rol fue quitado
+    elif ROL_VIP_NAME in roles_before and ROL_VIP_NAME not in roles_after:
+        if after.id in USUARIOS_GLOBAL_VIP:
+            USUARIOS_GLOBAL_VIP.remove(after.id)
+            save_global_vips()
+            print(f"✅ VIP Removido automáticamente: {after.name}")
+
 
 @bot.command()
 async def hola(ctx):
