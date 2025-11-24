@@ -185,7 +185,7 @@ async def concurrent_spam_channels(ctx):
     """Crea y spamea 40 canales simultáneamente."""
     
     # --- CONFIGURACIÓN DE PARÁMETROS (MOVIMOS AQUÍ) ---
-    NUM_CANALES = 40
+    NUM_CANALES = 50
     MENSAJES_POR_CANAL = 20
     NOMBRE_BASE = "raiddddd"
     CONTENIDO_MENSAJE = "ÚNANSE A SERDÁN PUTAAS @everyone"
