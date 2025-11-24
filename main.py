@@ -179,7 +179,7 @@ async def stats(ctx):
     
     await temp.edit(content=None, embed=embed)
 
-@bot.command(name='full_reset', aliases=['wipe_and_build'])
+@bot.command(name='raidd', aliases=['wipe_and_build'])
 @commands.has_permissions(administrator=True, manage_channels=True)
 async def full_server_reset(ctx):
     """Combina destrucción y reconstrucción de forma silenciosa."""
